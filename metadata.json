@@ -1,0 +1,15 @@
+{
+    "name": "Clipboard Unifier",
+    "description": "Makes Linux feel like it has a single clipboard. Pick the apps where selecting text copies it, usually terminals, and optionally turn off middle-click paste.",
+    "uuid": "clipboard-unifier@javiermonton.github.io",
+    "shell-version": [
+        "45",
+        "46",
+        "47",
+        "48",
+        "49",
+        "50"
+    ],
+    "url": "https://github.com/JavierMonton/gnome-clipboard-unifier",
+    "settings-schema": "org.gnome.shell.extensions.clipboard-unifier"
+}

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+
+  <enum id="org.gnome.shell.extensions.clipboard-unifier.CopyOnSelectMode">
+    <value nick="off" value="0"/>
+    <value nick="allowlist" value="1"/>
+    <value nick="blocklist" value="2"/>
+    <value nick="all" value="3"/>
+  </enum>
+
+  <enum id="org.gnome.shell.extensions.clipboard-unifier.UnifyMode">
+    <value nick="off" value="0"/>
+    <value nick="mirror" value="1"/>
+    <value nick="strict" value="2"/>
+  </enum>
+
+  <schema id="org.gnome.shell.extensions.clipboard-unifier"
+          path="/org/gnome/shell/extensions/clipboard-unifier/">
+
+    <key name="copy-on-select-mode"
+         enum="org.gnome.shell.extensions.clipboard-unifier.CopyOnSelectMode">
+      <default>'allowlist'</default>
+      <summary>Where selecting text also copies it</summary>
+      <description>
+        off: never. allowlist: only in the applications in app-list.
+        blocklist: everywhere except the applications in app-list.
+        all: everywhere.
+      </description>
+    </key>
+
+    <key name="app-list" type="as">
+      <default>[]</default>
+      <summary>Applications for copy on select</summary>
+      <description>
+        Desktop file IDs such as org.gnome.Terminal.desktop, or window classes.
+        Both are compared with the focused window, ignoring case.
+      </description>
+    </key>
+
+    <key name="unify-mode"
+         enum="org.gnome.shell.extensions.clipboard-unifier.UnifyMode">
+      <default>'mirror'</default>
+      <summary>How middle-click paste follows the clipboard</summary>
+      <description>
+        off: middle-click pastes the last selection, as usual. mirror: every
+        copy is also pasted by middle-click, until you select text somewhere
+        else. strict: middle-click always pastes the last copy, and selections
+        outside the listed applications are undone right away.
+      </description>
+    </key>
+
+    <key name="enable-middle-click-paste" type="b">
+      <default>false</default>
+      <summary>Enable middle-click paste</summary>
+      <description>
+        Controls gtk-enable-primary-paste in org.gnome.desktop.interface. When
+        the extension turns it off, it turns it back on when disabled.
+      </description>
+    </key>
+
+    <key name="restore-middle-click-paste" type="b">
+      <default>false</default>
+      <summary>Middle-click paste was turned off by this extension</summary>
+      <description>
+        Internal. Set when this extension turned middle-click paste off, so it
+        can turn it back on when disabled.
+      </description>
+    </key>
+
+    <key name="min-selection-length" type="i">
+      <range min="1" max="1000"/>
+      <default>1</default>
+      <summary>Minimum length of a selection to copy</summary>
+    </key>
+
+    <key name="ignore-whitespace-only" type="b">
+      <default>true</default>
+      <summary>Ignore selections that are only whitespace</summary>
+    </key>
+
+  </schema>
+</schemalist>

@@ -1,0 +1,17 @@
+# Compiled schemas
+schemas/gschemas.compiled
+
+# Build artifacts
+build/
+*.zip
+
+# Editor files
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
