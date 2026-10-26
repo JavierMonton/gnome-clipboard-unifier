@@ -53,8 +53,7 @@
       <default>false</default>
       <summary>Enable middle-click paste</summary>
       <description>
-        Controls gtk-enable-primary-paste in org.gnome.desktop.interface. When
-        the extension turns it off, it turns it back on when disabled.
+        Sets gtk-enable-primary-paste in org.gnome.desktop.interface.
       </description>
     </key>
 
@@ -62,8 +61,8 @@
       <default>false</default>
       <summary>Middle-click paste was turned off by this extension</summary>
       <description>
-        Internal. Set when this extension turned middle-click paste off, so it
-        can turn it back on when disabled.
+        Internal. True if gtk-enable-primary-paste was turned off by the
+        extension and must be restored on disable.
       </description>
     </key>
 

@@ -3,28 +3,39 @@
 An opinionated GNOME Shell extension that makes Linux behave as if it had one
 clipboard.
 
+Annoyed by your paste shortcuts pasting something you didn't copy? 
+Or by copying something you selected by error on a random application? 
+
+This extension keeps your buffers in sync and allows you to enable/disable copy-on-select for specific applications.
+
+
+
 ## Features
 
-- Pick the applications where **select to copy** works, usually terminals.
-- Keep the two copy&paste buffers **in sync**, so `Ctrl+V` always pastes what
+- Keep the two copy&paste buffers **in sync**, so all **paste shortcuts** always pastes what
   you copied.
-- **Turn off middle-click paste**, which it does by default.
+- **Copy on select** enabled/disabled only for applications you choose.
+- Optionally, **Turn off middle-click paste**.
 
 ## The short version
 
-Install it, add your terminal, and leave the two settings alone. The defaults
-are **Mirror** with **middle-click paste disabled**, which is the combination
-worth recommending:
+This has been designed to unify the clipboard experience in Linux, 
+and to enable the copy-on-select feature only for applications where it is useful, like terminals.
+Middle-click for paste is disabled by default, as it improves the experience (see details below), but it can be enabled.
 
-- `Ctrl+C` anywhere, `Ctrl+V` anywhere. One clipboard.
-- Select text with the mouse **in a terminal** and it is copied, so `Ctrl+V`
-  pastes it.
+
+The default configurations are **Mirror** with **middle-click paste disabled**.
+You can also add applications to the list, and copy-on-select will be enabled for them, and disabled for all others. 
+It's designed to be used with terminals, so you can autodetect them easily.
+
+With this configuration:
+
+- All copy&paste shortcuts work the same way everywhere. One clipboard.
+- Select text with the mouse **in a terminal** (or the applications you chose) and it is copied.
 - Select text with the mouse **anywhere else** and nothing happens to your
   clipboard. Your selection also stays selected, so you can edit it, delete it
   or copy it, exactly as you would without the extension.
 - The mouse wheel does not paste anything.
-
-The rest of this file explains the settings and why these are the defaults.
 
 ## Why?
 
@@ -48,23 +59,17 @@ In my opinion, copy on select is really useful in a terminal and a nuisance
 everywhere else. Linux has no way to set that per application, so this
 extension adds it, and keeps the two buffers in sync.
 
-## Paste what you copied
-
-This setting decides what middle-click pastes. It has three values.
+## Modes
 
 ### Mirror (the default)
 
-Every time you copy something, middle-click pastes it too. Text you select
-with the mouse is never touched, so nothing deselects itself in any
-application. That is why it is the default.
+Perfect if middle-click paste is disabled. It unifies the two buffers.
 
 ### Strict
 
-Same as Mirror, plus: when you select text with the mouse in an application
-that is not on your list, the extension puts your last copy back right away,
-undoing that selection.
-
-Read the comparison below before picking it.
+If middle-click paste is enabled, there are some situations where middle-click could paste
+something different from the regular clipboard. Strict closes that gap, but it has a side effect:
+it could deselect text you selected with the mouse in some applications.
 
 ### Off
 
@@ -86,14 +91,7 @@ until you copy something again.
 wheel always pastes what you copied, whatever you have selected since.
 
 The downside shows up in those same applications: text you select with the
-mouse **deselects itself** a moment after you select it. In Nautilus that
-means:
-
-- When renaming a file, you cannot select part of the name to fix it. The
-  selection disappears and `Backspace` has nothing to delete.
-- You cannot select text with the mouse and then press `Ctrl+C`. By the time
-  you press it nothing is selected, so nothing is copied.
-- Text you highlight just to read it stops looking highlighted.
+mouse **deselects itself** a moment after you select it. 
 
 This happens because only one application can own the selection at a time.
 Taking it back hands it to the extension, and GTK applications clear their
@@ -101,18 +99,6 @@ highlight when that happens. There is no way to ask them not to.
 
 Applications **on your list** are not affected in either mode. Their
 selections are copied, not undone.
-
-### At a glance
-
-The middle-click rows assume you turned middle-click paste back on.
-
-| What you do | Mirror | Strict | Off |
-| --- | --- | --- | --- |
-| Select in a terminal, `Ctrl+V` elsewhere | pastes it | pastes it | pastes it |
-| Select part of a file name to rename it | stays selected | deselects itself | stays selected |
-| Select in a help page, then `Ctrl+C` | copies it | copies nothing | copies it |
-| Middle-click after `Ctrl+C` | pastes what you copied | pastes what you copied | pastes your last selection |
-| Middle-click after selecting in Nautilus | pastes that selection | pastes what you copied | pastes that selection |
 
 ## The other settings
 
@@ -132,8 +118,7 @@ ignoring case. *Detect* adds every installed terminal.
 **Enable middle-click paste**: off by default. This is GNOME's own
 `gtk-enable-primary-paste` setting. The extension turns it off, and turns it
 back on when you enable this switch or disable the extension. It only affects
-GTK applications; Firefox, Qt and Electron applications have their own
-settings.
+GTK applications;
 
 **Minimum length** and **Ignore selections that are only spaces** stop a
 stray click or drag from replacing your clipboard.
@@ -167,8 +152,7 @@ make dev       # Watch for changes and auto-install
 - Strict does nothing while your clipboard is empty, so after login it only
   starts undoing selections once you have copied something.
 - Disabling the extension turns middle-click paste back on, if the extension
-  was the one that turned it off. This also happens while the screen is
-  locked.
+  was the one that turned it off.
 
 ## License
 

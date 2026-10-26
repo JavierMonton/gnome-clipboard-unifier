@@ -21,19 +21,11 @@ const UnifyMode = {
 const INTERFACE_SCHEMA = 'org.gnome.desktop.interface';
 const PRIMARY_PASTE_KEY = 'gtk-enable-primary-paste';
 
-// Wait for a drag selection to settle, so it costs a single read.
+// Debounce so a drag selection triggers a single read.
 const READ_DEBOUNCE_MS = 150;
 
-// The mimetypes st_clipboard_get_text() can convert.
-const TEXT_MIMETYPES = [
-    'text/plain;charset=utf-8',
-    'UTF8_STRING',
-    'text/plain',
-    'STRING',
-];
-
 export default class ClipboardUnifierExtension extends Extension {
-    // Bumped on disable() so a read still in flight knows it is obsolete.
+    // Incremented on disable() to invalidate pending reads.
     _epoch = 0;
 
     enable() {
@@ -42,7 +34,7 @@ export default class ClipboardUnifierExtension extends Extension {
         this._selection = global.display.get_selection();
         this._tracker = Shell.WindowTracker.get_default();
 
-        // Last known contents of each buffer, so handling one never reads the other.
+        // Last known text of each selection type.
         this._text = new Map();
 
         this._dirty = new Set();
@@ -59,6 +51,7 @@ export default class ClipboardUnifierExtension extends Extension {
         this._ownerChangedId = this._selection.connect('owner-changed',
             (_selection, type) => this._onOwnerChanged(type));
 
+        // Record the current text, so strict mode works before the first copy after unlock.
         this._queueRead(St.ClipboardType.PRIMARY);
         this._queueRead(St.ClipboardType.CLIPBOARD);
     }
@@ -69,8 +62,6 @@ export default class ClipboardUnifierExtension extends Extension {
             this._middleClickId = null;
         }
 
-        // This also runs on screen lock, so middle-click paste comes back while
-        // the screen is locked and goes away again on unlock.
         this._restoreMiddleClickPaste();
 
         if (this._ownerChangedId) {
@@ -83,27 +74,17 @@ export default class ClipboardUnifierExtension extends Extension {
             this._timeoutId = 0;
         }
 
-        // get_text() takes no cancellable, so pending reads run to completion.
+        // get_text() is not cancellable.
         this._epoch++;
         this._reading = null;
 
-        this._dirty.clear();
         this._dirty = null;
-        this._text.clear();
         this._text = null;
         this._selection = null;
         this._clipboard = null;
         this._tracker = null;
         this._interfaceSettings = null;
         this._settings = null;
-    }
-
-    get _active() {
-        return !!this._settings;
-    }
-
-    _isStale(epoch) {
-        return !this._active || epoch !== this._epoch;
     }
 
     _onOwnerChanged(type) {
@@ -115,10 +96,6 @@ export default class ClipboardUnifierExtension extends Extension {
     }
 
     _queueRead(type) {
-        if (!this._active) {
-            return;
-        }
-
         this._dirty.add(type);
         this._scheduleRead();
     }
@@ -128,14 +105,9 @@ export default class ClipboardUnifierExtension extends Extension {
             return;
         }
 
-        const epoch = this._epoch;
-
         this._timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, READ_DEBOUNCE_MS, () => {
             this._timeoutId = 0;
-
-            if (!this._isStale(epoch)) {
-                this._startRead();
-            }
+            this._startRead();
 
             return GLib.SOURCE_REMOVE;
         });
@@ -143,45 +115,31 @@ export default class ClipboardUnifierExtension extends Extension {
 
     _startRead() {
         const [type] = this._dirty;
-        if (type === undefined || this._reading !== null) {
-            return;
-        }
-
         this._dirty.delete(type);
-
-        // get_text() runs its callback synchronously when there is no text to
-        // read. Check first so every read completes the same way.
-        if (!this._hasText(type)) {
-            this._text.set(type, '');
-            this._handleChange(type, '');
-            this._scheduleRead();
-            return;
-        }
-
         this._reading = type;
 
         const epoch = this._epoch;
 
         this._clipboard.get_text(type, (_clipboard, text) => {
-            if (this._isStale(epoch)) {
+            if (epoch !== this._epoch) {
                 return;
             }
 
             this._reading = null;
-            this._text.set(type, text ?? '');
-            this._handleChange(type, text ?? '');
-
+            this._onRead(type, text ?? '');
             this._scheduleRead();
         });
     }
 
-    _hasText(type) {
-        const mimetypes = this._clipboard.get_mimetypes(type) ?? [];
+    _onRead(type, text) {
+        const isFirstRead = !this._text.has(type);
+        this._text.set(type, text);
 
-        return mimetypes.some(mimetype => TEXT_MIMETYPES.includes(mimetype));
-    }
+        // The first read after enable() only records the current text.
+        if (isFirstRead) {
+            return;
+        }
 
-    _handleChange(type, text) {
         if (type === St.ClipboardType.PRIMARY) {
             this._onPrimaryChanged(text);
         } else {
@@ -205,7 +163,7 @@ export default class ClipboardUnifierExtension extends Extension {
         }
     }
 
-    // Wayland and XWayland clients report different identifiers, so try both.
+    // App ID and WM_CLASS of the focused window.
     _focusedWindowIds() {
         const window = global.display.focus_window;
         if (!window) {
@@ -253,8 +211,7 @@ export default class ClipboardUnifierExtension extends Extension {
         }
     }
 
-    // This is a GNOME setting, not ours. Remember when we were the ones who
-    // turned it off, so disable() only undoes our own change.
+    // Only restored on disable() if it was turned off here.
     _disableMiddleClickPaste() {
         if (this._interfaceSettings.get_boolean(PRIMARY_PASTE_KEY)) {
             this._settings.set_boolean('restore-middle-click-paste', true);
@@ -280,7 +237,7 @@ export default class ClipboardUnifierExtension extends Extension {
         return text.length >= this._settings.get_int('min-selection-length');
     }
 
-    // Skipping no-op writes is what keeps our own echo from looping.
+    // Skip unchanged text to avoid owner-changed feedback loops.
     _write(type, text) {
         if (!text || this._text.get(type) === text) {
             return;

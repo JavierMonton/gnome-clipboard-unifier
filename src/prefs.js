@@ -266,18 +266,17 @@ function buildApplicationsGroup(window, settings) {
 
 function buildMiddleClickGroup(settings) {
     const group = new Adw.PreferencesGroup({
-        title: 'Middle-click paste',
-        description: 'Mouse Middle-click, recommended disabled if using Mirror mode'
+        title: 'Configuration',
     });
 
-    group.add(buildEnumRow(settings, 'Paste what you copied',
-        'Mirror: Keeps buffers in sync, but middle-click can paste different buffer in some cases.' +
-        'Strict: Keeps buffers in sync in all cases, even for middle-click, but it can remove focus on some apps.',
+    group.add(buildEnumRow(settings, 'Mode',
+        'Mirror (recommended): unifies the clipboards. Best when middle-click paste is disabled.\n' +
+        'Strict: recommended when middle-click paste is enabled, but it can break text selection in some apps. Check the docs.',
         'unify-mode', UNIFY_MODES, UNIFY_LABELS));
 
     const middleClick = new Adw.SwitchRow({
         title: 'Enable middle-click paste',
-        subtitle: 'Paste with the mouse wheel. Some apps might ignore this setting.',
+        subtitle: 'Paste with the mouse wheel. Some apps might ignore this.',
     });
     settings.bind('enable-middle-click-paste', middleClick, 'active',
         Gio.SettingsBindFlags.DEFAULT);

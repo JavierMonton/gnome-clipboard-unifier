@@ -28,17 +28,14 @@ install: build
 	@cp $(SCHEMA_DIR)/*.xml $(INSTALL_DIR)/schemas/
 	@glib-compile-schemas $(INSTALL_DIR)/schemas/
 	@echo "Installation complete"
-	@echo ""
-	@echo "GNOME Shell only picks up a newly installed extension after the"
-	@echo "session restarts. On Wayland that means logging out and back in."
-	@echo "Then: make enable"
+	@echo "Log out and back in to load it, then run: make enable"
 
 uninstall:
 	@echo "Uninstalling extension..."
 	@rm -rf $(INSTALL_DIR)
 	@echo "Extension uninstalled"
 
-# The ZIP must have metadata.json at its root, which is why we zip from inside.
+# metadata.json must be at the root of the ZIP.
 package: build
 	@echo "Creating extension package..."
 	@rm -rf $(BUILD_DIR)/$(UUID)
@@ -63,7 +60,7 @@ test: build
 	@echo "Validating metadata.json..."
 	@python3 -m json.tool metadata.json > /dev/null && echo "  ok: valid JSON"
 	@python3 -c "import json,sys; m=json.load(open('metadata.json')); \
-		sys.exit('  FAIL: drop the version field, extensions.gnome.org assigns it' \
+		sys.exit('  FAIL: version field is set by extensions.gnome.org' \
 		if 'version' in m else 0)" && echo "  ok: no version field"
 	@python3 -c "import json,sys; m=json.load(open('metadata.json')); \
 		sys.exit('  FAIL: uuid must not use the gnome.org namespace' \

@@ -1,6 +1,6 @@
 {
     "name": "Clipboard Unifier",
-    "description": "Makes Linux feel like it has a single clipboard. Pick the apps where selecting text copies it, usually terminals, and optionally turn off middle-click paste.",
+    "description": "Unifies the clipboards so there's virtually only one clipboard. Allows you to choose which apps work with select-to-copy, and allows to disable the middle-click paste. This extension reads and writes to the clipboard.",
     "uuid": "clipboard-unifier@javiermonton.github.io",
     "shell-version": [
         "45",
