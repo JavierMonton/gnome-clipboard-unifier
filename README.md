@@ -17,7 +17,7 @@ This extension keeps your buffers in sync and allows you to enable/disable copy-
 - **Copy on select** enabled/disabled only for applications you choose.
 - Optionally, **Turn off middle-click paste**.
 
-## The short version
+## Summary
 
 This has been designed to unify the clipboard experience in Linux, 
 and to enable the copy-on-select feature only for applications where it is useful, like terminals.
@@ -76,44 +76,18 @@ it could deselect text you selected with the mouse in some applications.
 Middle-click works as usual and pastes whatever you last selected. Copy on
 select still works for the applications on your list.
 
-## Middle-click paste, and the gap
-
-With middle-click paste **disabled** (the default), Mirror is all you need and
-you can skip this section.
-
-If you turn middle-click paste back on, Mirror leaves a gap. The wheel pastes
-what you last copied, until you select some text with the mouse in an
-application that is not on your list: a file name in Nautilus, a sentence in
-a browser or a text editor. From then on the wheel pastes *that* instead,
-until you copy something again.
-
-**Strict closes that gap.** It puts your last copy back immediately, so the
-wheel always pastes what you copied, whatever you have selected since.
-
-The downside shows up in those same applications: text you select with the
-mouse **deselects itself** a moment after you select it. 
-
-This happens because only one application can own the selection at a time.
-Taking it back hands it to the extension, and GTK applications clear their
-highlight when that happens. There is no way to ask them not to.
-
-Applications **on your list** are not affected in either mode. Their
-selections are copied, not undone.
-
 ## The other settings
 
 **Copy selected text**
 
-| Option | What it does |
-| --- | --- |
-| Never | Selecting text never copies it |
-| Only in listed applications | The usual choice: terminals, and nothing else |
-| Everywhere except listed applications | The other way round, to leave out a few applications |
-| Everywhere | Every selection is copied |
+| Option | What it does                                              |
+| --- |-----------------------------------------------------------|
+| Never | Selecting text never copies it                            |
+| Only in listed applications | The usual choice: terminals, or your desired applications |
+| Everywhere except listed applications | The other way round, to leave out a few applications      |
+| Everywhere | Every selection is copied                                 |
 
-**Applications**: desktop file IDs such as `org.gnome.Terminal.desktop`, or
-window classes (`WM_CLASS`). Both are compared with the focused window,
-ignoring case. *Detect* adds every installed terminal.
+**Applications**: Add the applications you want. *Detect* adds every installed terminal.
 
 **Enable middle-click paste**: off by default. This is GNOME's own
 `gtk-enable-primary-paste` setting. The extension turns it off, and turns it
@@ -149,10 +123,31 @@ make dev       # Watch for changes and auto-install
 - Do not run it alongside another clipboard synchroniser. GPaste's
   "synchronize clipboards" option and this extension will fight each other.
   Clipboard *history* managers are fine.
-- Strict does nothing while your clipboard is empty, so after login it only
-  starts undoing selections once you have copied something.
 - Disabling the extension turns middle-click paste back on, if the extension
   was the one that turned it off.
+
+
+## About Middle-click paste
+
+With middle-click paste **disabled** (the default), Mirror is all you need, and
+you can skip this section.
+
+If you turn middle-click paste back on, Mirror leaves a gap. The wheel pastes
+what you last copied, until you select some text with the mouse in an
+application that is not on your list.
+
+**Strict closes that gap.** It puts your last copy back immediately, so the
+wheel always pastes what you copied, whatever you have selected since.
+
+The downside shows up same applications: text you select with the
+mouse **deselects itself** a moment after you select it.
+
+This happens because only one application can own the selection at a time.
+Taking it back hands it to the extension, and GTK applications clear their
+highlight when that happens. There is no way to ask them not to.
+
+Applications **on your list** are not affected in either mode. Their
+selections are copied, not undone.
 
 ## License
 
