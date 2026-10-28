@@ -37,6 +37,8 @@ With this configuration:
   or copy it, exactly as you would without the extension.
 - The mouse wheel does not paste anything.
 
+![img.png](img.png)
+
 ## Why?
 
 Linux carries two independent text buffers:
