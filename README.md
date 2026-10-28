@@ -113,6 +113,7 @@ make install
 make install   # Install extension locally
 make package   # Build the ZIP for extensions.gnome.org
 make test      # Run basic validation
+make lint      # Run ESLint with the GNOME config (needs npm)
 make dev       # Watch for changes and auto-install
 ```
 

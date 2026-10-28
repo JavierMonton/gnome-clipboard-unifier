@@ -3,7 +3,7 @@ import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
-import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
+import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 const CopyOnSelectMode = {
     OFF: 'off',
@@ -41,12 +41,11 @@ export default class ClipboardUnifierExtension extends Extension {
         this._reading = null;
         this._timeoutId = 0;
 
-        this._interfaceSettings = new Gio.Settings({ schema_id: INTERFACE_SCHEMA });
+        this._interfaceSettings = new Gio.Settings({schema_id: INTERFACE_SCHEMA});
         this._middleClickId = this._settings.connect(
             'changed::enable-middle-click-paste', () => this._onMiddleClickSettingChanged());
-        if (!this._settings.get_boolean('enable-middle-click-paste')) {
+        if (!this._settings.get_boolean('enable-middle-click-paste'))
             this._disableMiddleClickPaste();
-        }
 
         this._ownerChangedId = this._selection.connect('owner-changed',
             (_selection, type) => this._onOwnerChanged(type));
@@ -88,11 +87,10 @@ export default class ClipboardUnifierExtension extends Extension {
     }
 
     _onOwnerChanged(type) {
-        if (type === Meta.SelectionType.SELECTION_PRIMARY) {
+        if (type === Meta.SelectionType.SELECTION_PRIMARY)
             this._queueRead(St.ClipboardType.PRIMARY);
-        } else if (type === Meta.SelectionType.SELECTION_CLIPBOARD) {
+        else if (type === Meta.SelectionType.SELECTION_CLIPBOARD)
             this._queueRead(St.ClipboardType.CLIPBOARD);
-        }
     }
 
     _queueRead(type) {
@@ -101,9 +99,8 @@ export default class ClipboardUnifierExtension extends Extension {
     }
 
     _scheduleRead() {
-        if (this._timeoutId || this._reading !== null || this._dirty.size === 0) {
+        if (this._timeoutId || this._reading !== null || this._dirty.size === 0)
             return;
-        }
 
         this._timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, READ_DEBOUNCE_MS, () => {
             this._timeoutId = 0;
@@ -121,9 +118,8 @@ export default class ClipboardUnifierExtension extends Extension {
         const epoch = this._epoch;
 
         this._clipboard.get_text(type, (_clipboard, text) => {
-            if (epoch !== this._epoch) {
+            if (epoch !== this._epoch)
                 return;
-            }
 
             this._reading = null;
             this._onRead(type, text ?? '');
@@ -136,63 +132,55 @@ export default class ClipboardUnifierExtension extends Extension {
         this._text.set(type, text);
 
         // The first read after enable() only records the current text.
-        if (isFirstRead) {
+        if (isFirstRead)
             return;
-        }
 
-        if (type === St.ClipboardType.PRIMARY) {
+        if (type === St.ClipboardType.PRIMARY)
             this._onPrimaryChanged(text);
-        } else {
+        else
             this._onClipboardChanged(text);
-        }
     }
 
     _onPrimaryChanged(text) {
         if (this._shouldForward()) {
-            if (this._isAcceptable(text)) {
+            if (this._isAcceptable(text))
                 this._write(St.ClipboardType.CLIPBOARD, text);
-            }
         } else if (this._settings.get_string('unify-mode') === UnifyMode.STRICT) {
             this._write(St.ClipboardType.PRIMARY, this._text.get(St.ClipboardType.CLIPBOARD));
         }
     }
 
     _onClipboardChanged(text) {
-        if (this._settings.get_string('unify-mode') !== UnifyMode.OFF) {
+        if (this._settings.get_string('unify-mode') !== UnifyMode.OFF)
             this._write(St.ClipboardType.PRIMARY, text);
-        }
     }
 
     // App ID and WM_CLASS of the focused window.
     _focusedWindowIds() {
         const window = global.display.focus_window;
-        if (!window) {
+        if (!window)
             return [];
-        }
 
         const ids = [];
         const appId = this._tracker.get_window_app(window)?.get_id();
 
-        if (appId) {
+        if (appId)
             ids.push(appId);
-        }
 
         const wmClass = window.get_wm_class();
-        if (wmClass) {
+        if (wmClass)
             ids.push(wmClass);
-        }
 
         return ids;
     }
 
     _shouldForward() {
         const mode = this._settings.get_string('copy-on-select-mode');
-        if (mode === CopyOnSelectMode.OFF) {
+        if (mode === CopyOnSelectMode.OFF)
             return false;
-        }
-        if (mode === CopyOnSelectMode.ALL) {
+
+        if (mode === CopyOnSelectMode.ALL)
             return true;
-        }
 
         const ids = this._focusedWindowIds();
         const list = this._settings.get_strv('app-list');
@@ -227,21 +215,19 @@ export default class ClipboardUnifierExtension extends Extension {
     }
 
     _isAcceptable(text) {
-        if (!text) {
+        if (!text)
             return false;
-        }
-        if (this._settings.get_boolean('ignore-whitespace-only') && !text.trim()) {
+
+        if (this._settings.get_boolean('ignore-whitespace-only') && !text.trim())
             return false;
-        }
 
         return text.length >= this._settings.get_int('min-selection-length');
     }
 
     // Skip unchanged text to avoid owner-changed feedback loops.
     _write(type, text) {
-        if (!text || this._text.get(type) === text) {
+        if (!text || this._text.get(type) === text)
             return;
-        }
 
         this._text.set(type, text);
         this._clipboard.set_text(type, text);

@@ -1,8 +1,7 @@
 import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
-import GObject from 'gi://GObject';
-import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 const COPY_ON_SELECT_MODES = ['off', 'allowlist', 'blocklist', 'all'];
 const COPY_ON_SELECT_LABELS = [
@@ -21,113 +20,99 @@ const TERMINAL_CATEGORY = 'TerminalEmulator';
 function describeEntry(entry) {
     const info = entry.endsWith('.desktop') ? Gio.DesktopAppInfo.new(entry) : null;
 
-    if (info) {
-        return { name: info.get_display_name(), icon: info.get_icon(), subtitle: entry };
-    }
+    if (info)
+        return {name: info.get_display_name(), icon: info.get_icon(), subtitle: entry};
 
-    return { name: entry, icon: null, subtitle: 'Matched by window class' };
+    return {name: entry, icon: null, subtitle: 'Matched by window class'};
 }
 
-const AppRow = GObject.registerClass({
-    GTypeName: 'ClipboardUnifierAppRow',
-}, class AppRow extends Adw.ActionRow {
-    _init(entry, onRemove) {
-        const { name, icon, subtitle } = describeEntry(entry);
+function buildAppRow(entry, onRemove) {
+    const {name, icon, subtitle} = describeEntry(entry);
+    const row = new Adw.ActionRow({title: name, subtitle});
 
-        super._init({ title: name, subtitle });
+    if (icon)
+        row.add_prefix(new Gtk.Image({gicon: icon, pixel_size: 32}));
 
-        if (icon) {
-            this.add_prefix(new Gtk.Image({ gicon: icon, pixel_size: 32 }));
-        }
+    const removeButton = new Gtk.Button({
+        icon_name: 'user-trash-symbolic',
+        valign: Gtk.Align.CENTER,
+        css_classes: ['flat', 'error'],
+        tooltip_text: 'Remove this application',
+    });
+    removeButton.connect('clicked', () => onRemove(entry));
+    row.add_suffix(removeButton);
 
-        const removeButton = new Gtk.Button({
-            icon_name: 'user-trash-symbolic',
-            valign: Gtk.Align.CENTER,
-            css_classes: ['flat', 'error'],
-            tooltip_text: 'Remove this application',
-        });
-        removeButton.connect('clicked', () => onRemove(entry));
-        this.add_suffix(removeButton);
-    }
-});
+    return row;
+}
 
-const AppChooser = GObject.registerClass({
-    GTypeName: 'ClipboardUnifierAppChooser',
-}, class AppChooser extends Adw.Window {
-    _init(parent, onChosen) {
-        super._init({
-            transient_for: parent,
-            modal: true,
-            title: 'Add Application',
-            default_width: 460,
-            default_height: 560,
-        });
+function showAppChooser(parent, onChosen) {
+    const dialog = new Adw.Window({
+        transient_for: parent,
+        modal: true,
+        title: 'Add Application',
+        default_width: 460,
+        default_height: 560,
+    });
 
-        this._search = new Gtk.SearchEntry({
-            placeholder_text: 'Search applications',
-            margin_top: 6,
-            margin_bottom: 6,
-            margin_start: 12,
-            margin_end: 12,
-        });
-        this._search.connect('search-changed', () => this._listBox.invalidate_filter());
+    const search = new Gtk.SearchEntry({
+        placeholder_text: 'Search applications',
+        margin_top: 6,
+        margin_bottom: 6,
+        margin_start: 12,
+        margin_end: 12,
+    });
 
-        this._listBox = new Gtk.ListBox({
-            selection_mode: Gtk.SelectionMode.NONE,
-            css_classes: ['boxed-list'],
-            margin_start: 12,
-            margin_end: 12,
-            margin_bottom: 12,
-        });
-        this._listBox.set_filter_func(row => this._filterRow(row));
-        this._listBox.connect('row-activated', (_list, row) => {
-            onChosen(row.entryId);
-            this.close();
-        });
-
-        for (const info of this._installedApps()) {
-            this._listBox.append(this._buildRow(info));
-        }
-
-        const box = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL });
-        box.append(this._search);
-        box.append(new Gtk.ScrolledWindow({ vexpand: true, child: this._listBox }));
-
-        const toolbarView = new Adw.ToolbarView({ content: box });
-        toolbarView.add_top_bar(new Adw.HeaderBar());
-        this.set_content(toolbarView);
-    }
-
-    _installedApps() {
-        return Gio.AppInfo.get_all()
-            .filter(info => info.should_show())
-            .sort((a, b) => a.get_display_name().localeCompare(b.get_display_name()));
-    }
-
-    _buildRow(info) {
-        const row = new Adw.ActionRow({
-            title: info.get_display_name(),
-            subtitle: info.get_id(),
-            activatable: true,
-        });
-
-        row.entryId = info.get_id();
-        row.searchText = `${info.get_display_name()} ${info.get_id()}`.toLowerCase();
-
-        const icon = info.get_icon();
-        if (icon) {
-            row.add_prefix(new Gtk.Image({ gicon: icon, pixel_size: 32 }));
-        }
-
-        return row;
-    }
-
-    _filterRow(row) {
-        const query = this._search.get_text().trim().toLowerCase();
+    const listBox = new Gtk.ListBox({
+        selection_mode: Gtk.SelectionMode.NONE,
+        css_classes: ['boxed-list'],
+        margin_start: 12,
+        margin_end: 12,
+        margin_bottom: 12,
+    });
+    listBox.set_filter_func(row => {
+        const query = search.get_text().trim().toLowerCase();
 
         return query === '' || row.searchText.includes(query);
-    }
-});
+    });
+    listBox.connect('row-activated', (_list, row) => {
+        onChosen(row.entryId);
+        dialog.close();
+    });
+    search.connect('search-changed', () => listBox.invalidate_filter());
+
+    const apps = Gio.AppInfo.get_all()
+        .filter(info => info.should_show())
+        .sort((a, b) => a.get_display_name().localeCompare(b.get_display_name()));
+
+    for (const info of apps)
+        listBox.append(buildChooserRow(info));
+
+    const box = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL});
+    box.append(search);
+    box.append(new Gtk.ScrolledWindow({vexpand: true, child: listBox}));
+
+    const toolbarView = new Adw.ToolbarView({content: box});
+    toolbarView.add_top_bar(new Adw.HeaderBar());
+    dialog.set_content(toolbarView);
+    dialog.present();
+}
+
+function buildChooserRow(info) {
+    const row = new Adw.ActionRow({
+        title: info.get_display_name(),
+        subtitle: info.get_id(),
+        activatable: true,
+    });
+
+    row.entryId = info.get_id();
+    row.searchText = `${info.get_display_name()} ${info.get_id()}`.toLowerCase();
+
+    const icon = info.get_icon();
+    if (icon)
+        row.add_prefix(new Gtk.Image({gicon: icon, pixel_size: 32}));
+
+    return row;
+}
 
 export default class ClipboardUnifierPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
@@ -160,7 +145,7 @@ function buildCopyOnSelectGroup(settings) {
     const minLength = new Adw.SpinRow({
         title: 'Minimum length',
         subtitle: 'Shorter selections are not copied',
-        adjustment: new Gtk.Adjustment({ lower: 1, upper: 1000, step_increment: 1 }),
+        adjustment: new Gtk.Adjustment({lower: 1, upper: 1000, step_increment: 1}),
     });
     settings.bind('min-selection-length', minLength, 'value', Gio.SettingsBindFlags.DEFAULT);
     group.add(minLength);
@@ -196,9 +181,8 @@ function buildApplicationsGroup(window, settings) {
     const addEntry = entry => {
         const entries = settings.get_strv('app-list');
 
-        if (!entries.includes(entry)) {
+        if (!entries.includes(entry))
             entries.push(entry);
-        }
 
         setEntries(entries);
     };
@@ -213,18 +197,17 @@ function buildApplicationsGroup(window, settings) {
         for (const info of Gio.AppInfo.get_all()) {
             const categories = info.get_categories()?.split(';') ?? [];
 
-            if (categories.includes(TERMINAL_CATEGORY) && !entries.includes(info.get_id())) {
+            if (categories.includes(TERMINAL_CATEGORY) && !entries.includes(info.get_id()))
                 entries.push(info.get_id());
-            }
         }
 
         setEntries(entries);
     };
 
     const refresh = () => {
-        for (const row of rows) {
+        for (const row of rows)
             group.remove(row);
-        }
+
         rows = [];
 
         const entries = settings.get_strv('app-list');
@@ -235,16 +218,15 @@ function buildApplicationsGroup(window, settings) {
                 subtitle: 'Use the + button, or detect your terminals below',
             }));
         } else {
-            for (const entry of entries) {
-                addRow(new AppRow(entry, removeEntry));
-            }
+            for (const entry of entries)
+                addRow(buildAppRow(entry, removeEntry));
         }
 
         const detectRow = new Adw.ActionRow({
             title: 'Add installed terminals',
             subtitle: 'Finds every terminal app on this computer',
         });
-        const detectButton = new Gtk.Button({ label: 'Detect', valign: Gtk.Align.CENTER });
+        const detectButton = new Gtk.Button({label: 'Detect', valign: Gtk.Align.CENTER});
         detectButton.connect('clicked', addTerminals);
         detectRow.add_suffix(detectButton);
         addRow(detectRow);
@@ -256,7 +238,7 @@ function buildApplicationsGroup(window, settings) {
         css_classes: ['flat'],
         tooltip_text: 'Add an application',
     });
-    addButton.connect('clicked', () => new AppChooser(window, addEntry).present());
+    addButton.connect('clicked', () => showAppChooser(window, addEntry));
     group.set_header_suffix(addButton);
 
     refresh();
@@ -292,9 +274,8 @@ function buildEnumRow(settings, title, subtitle, key, nicks, labels) {
         selected: Math.max(0, nicks.indexOf(settings.get_string(key))),
     });
 
-    if (subtitle) {
+    if (subtitle)
         row.subtitle = subtitle;
-    }
 
     row.connect('notify::selected', () => settings.set_string(key, nicks[row.selected]));
 

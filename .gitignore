@@ -5,6 +5,10 @@ schemas/gschemas.compiled
 build/
 *.zip
 
+# ESLint (make lint)
+node_modules/
+package-lock.json
+
 # Editor files
 *.swp
 *.swo

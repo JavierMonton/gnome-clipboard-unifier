@@ -10,7 +10,7 @@ BUILD_DIR = build
 INSTALL_DIR = $(HOME)/.local/share/gnome-shell/extensions/$(UUID)
 SCHEMA_XML = $(SCHEMA_DIR)/org.gnome.shell.extensions.$(NAME).gschema.xml
 
-.PHONY: all build install uninstall package clean test enable prefs dev help
+.PHONY: all build install uninstall package clean test lint enable prefs dev help
 
 all: build
 
@@ -89,6 +89,10 @@ test: build
 	fi
 	@echo "Validation complete"
 
+lint:
+	@[ -d node_modules ] || npm install --no-audit --no-fund
+	@npx eslint $(SRC_DIR) eslint.config.js
+
 enable:
 	@gnome-extensions enable $(UUID)
 	@gnome-extensions info $(UUID)
@@ -116,6 +120,7 @@ help:
 	@echo "  package    Create the ZIP for extensions.gnome.org"
 	@echo "  clean      Remove build artifacts"
 	@echo "  test       Validate metadata, syntax, schema and review guidelines"
+	@echo "  lint       Run ESLint with the GNOME config"
 	@echo "  enable     Enable the installed extension"
 	@echo "  prefs      Open the preferences window"
 	@echo "  dev        Reinstall automatically on every change"
